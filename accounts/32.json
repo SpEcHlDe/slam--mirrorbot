@@ -1,0 +1,12 @@
+{
+  "type": "service_account",
+  "project_id": "curious-bounty-328917",
+  "private_key_id": "48f0c8444c97184111856b03e1950169bc4cbaca",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDF9oWwdXZs550t\nXJu4lxZRJbMT/pICZn3TTFvGYeIdQdalXGVk9STeoaLxG4vLa0Nd5tDOm7wTyXiV\nkacbUXqIZZ8qppw6NBTABZPM4VCDYcGi42OTiZPrxedbeZgXx3cS8zt/CG6v3r5W\njCz5OREG7DrwRsVAdW3/GVoDPLbUm4wiyNLZl5Ovy2ai0D8Zd6j1nRSg+jdazdGG\nkH8+Xc194oFaVBRcFqPBfm62lI7047ERx+bFWVkNjYRVV/tme2jEAXJVnA7ighE5\n9VGKOnF5MJUqcHMhZQFO+a8telSnfFLcuj5MzzMuIIofW2wwsMOqaLoujOg6UP+u\nNOtarRE1AgMBAAECggEAF3Yz+lRe4IxYu/y69exuItg+z5Kpt6rG+dPAbWlsv36Y\nk7OOJCIg/a5sHdA1HWWNL+QAVk7twkNBTSoHLefWXQj84rSpVQVBek/kPZwXNeL6\n7IpaOFejVjD3zlxsXVEbYyhm95NxGYXiyrtv7xTyLX8HgzJCrsoxavzpsUgw+6Rt\noqH0W7M84NQoO+4R6wurjJV9dwS/GSL0ae+iHGZbMGgaOEM/4RKvnnmLL2OChce7\nrnf5ZuInPqu//zgXr+QvfocfiJ3+1GQ2kEweqvumzz8fiHGyH+T9uVS+59OFvyEz\nOe0zwW/Kq9ayl6aCEAnm4tqKmXBadXTLBcK35r8vlwKBgQDtyBbR/MN3/+hKvyHw\n6YGN62yrZkUx+u13DgC8Z1NuKueATt0vyBvjIZvSTZ0IG6I9oD6KvRF1O5werDex\nGcaAshvGep03s7pAMDFbtrj500dYiBAet87i4AJ63zp66y3Y3xANJ+i5sD6iHfFL\nUys/+EblP8hEncQA7Bz03IF/cwKBgQDVIWuQczJMMJ0jzsZSPM6bOI+9E87oGX16\nv0TCwari8DEm5yZblrlVPlZBFQkFIioB18Ep7ZDGa7WClsJnRXcfaC48DLxKxkmN\nF6E47B8Kmas/bZhyMvrnhKoxVkLJeH05FZ4YbPVpnK/rm8xB7WogtfUzdHlwwZVK\nZHQ0eU+ytwKBgQDqV5FOAKtwP5Bi4j4EHU2mXchqn89AM8oG1JEbHUYXREeFp7PL\n3I7HaZ8VQ5Koo/tgeuZIe4+SF16EyDvW2c1NlrtTABKkDAhaLGTou4tQA87DzMz+\nSS6nYBhxmkEbVV6I50X9gUCWiMEhqxrcnqn4UKsmUpcAMPAz7H+ZPxyNSwKBgBGZ\npOxU1v57tT5TwQThiJ5A2X3fuOJp2HbefKsomxgKhcSUqhI+LCfh8fWF6yzFWXq1\nenof6Ci6lE6obH1iuyeYztiepJ34KfLA1MuClD2n2wBt6HzlwNqFlhhk6zcAADdK\nlbemp82E5vIp94AqPu1cmVcaczzgf5eZHA+JRQ+ZAoGAI88xV6rJwHLWd3fdxeie\nSqNBg++ZAiFsRjWMKU5Ehg5y/XWl1ObaSlhCRn31G16E2BCnL1AsgdXmcCRh6UfY\nkfFqS0qlYwP+enG2B8JCwthSik6WwoyCGYHnULhlV+8MfWtWrEN0vhq+utktq13c\nuhKXjonhHa1vUplZssnY+M4=\n-----END PRIVATE KEY-----\n",
+  "client_email": "mfc-8l048fu54f4e8huql8u9z349vx@curious-bounty-328917.iam.gserviceaccount.com",
+  "client_id": "114984702767384609012",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/mfc-8l048fu54f4e8huql8u9z349vx%40curious-bounty-328917.iam.gserviceaccount.com"
+}
