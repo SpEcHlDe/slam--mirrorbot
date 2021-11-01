@@ -167,16 +167,16 @@ class MegaDownloadHelper:
             node = folder_api.authorizeNode(mega_listener.node)
         if mega_listener.error is not None:
             return sendMessage(str(mega_listener.error), listener.bot, listener.update)
-        if STOP_DUPLICATE:
+        if STOP_DUPLICATE and not listener.isLeech:
             LOGGER.info('Checking File/Folder if already in Drive')
             mname = node.getName()
             if listener.isTar:
-                mname = mname + ".tar"
+                mname = mname + ".zip" if listener.isZip else mname + ".tar"
             if listener.extract:
                 smsg = None
             else:
                 gd = GoogleDriveHelper()
-                smsg, button = gd.drive_list(mname)
+                smsg, button = gd.drive_list(mname, True)
             if smsg:
                 msg1 = "File/Folder is already available in Drive.\nHere are the search results:"
                 sendMarkup(msg1, listener.bot, listener.update, button)

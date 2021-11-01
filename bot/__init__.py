@@ -5,6 +5,7 @@ import time
 import random
 import string
 import subprocess
+import requests
 
 import aria2p
 import qbittorrentapi as qba
@@ -35,20 +36,28 @@ LOGGER = logging.getLogger(__name__)
 
 CONFIG_FILE_URL = os.environ.get('CONFIG_FILE_URL', None)
 if CONFIG_FILE_URL is not None:
-    out = subprocess.run(["wget", "-q", "-O", "config.env", CONFIG_FILE_URL])
-    if out.returncode != 0:
-        logging.error(out)
+    res = requests.get(CONFIG_FILE_URL)
+    if res.status_code == 200:
+        with open('config.env', 'wb+') as f:
+            f.write(res.content)
+            f.close()
+    else:
+        logging.error(res.status_code)
 
 load_dotenv('config.env')
 
+SERVER_PORT = os.environ.get('SERVER_PORT', None)
+PORT = os.environ.get('PORT', SERVER_PORT)
+web = subprocess.Popen([f"gunicorn wserver:start_server --bind 0.0.0.0:{PORT} --worker-class aiohttp.GunicornWebWorker"], shell=True)
+time.sleep(1)
 alive = subprocess.Popen(["python3", "alive.py"])
-
 subprocess.run(["mkdir", "-p", "qBittorrent/config"])
 subprocess.run(["cp", "qBittorrent.conf", "qBittorrent/config/qBittorrent.conf"])
 subprocess.run(["qbittorrent-nox", "-d", "--profile=."])
-
 Interval = []
-
+DRIVES_NAMES = []
+DRIVES_IDS = []
+INDEX_URLS = []
 
 def getConfig(name: str):
     return os.environ[name]
@@ -60,9 +69,9 @@ def mktable():
         sql = "CREATE TABLE users (uid bigint, sudo boolean DEFAULT FALSE);"
         cur.execute(sql)
         conn.commit()
-        LOGGER.info("Table Created!")
+        logging.info("Table Created!")
     except Error as e:
-        LOGGER.error(e)
+        logging.error(e)
         exit(1)
 
 try:
@@ -88,7 +97,7 @@ def get_client() -> qba.TorrentsAPIMixIn:
         #qb_client.application.set_preferences({"disk_cache":64, "incomplete_files_ext":True, "max_connec":3000, "max_connec_per_torrent":300, "async_io_threads":8, "preallocate_all":True, "upnp":True, "dl_limit":-1, "up_limit":-1, "dht":True, "pex":True, "lsd":True, "encryption":0, "queueing_enabled":True, "max_active_downloads":15, "max_active_torrents":50, "dont_count_slow_torrents":True, "bittorrent_protocol":0, "recheck_completed_torrents":True, "enable_multi_connections_from_same_ip":True, "slow_torrent_dl_rate_threshold":100,"slow_torrent_inactive_timer":600})
         return qb_client
     except qba.LoginFailed as e:
-        LOGGER.error(str(e))
+        logging.error(str(e))
         return None
 
 
@@ -106,6 +115,8 @@ download_dict = {}
 # Stores list of users and chats the bot is authorized to use in
 AUTHORIZED_CHATS = set()
 SUDO_USERS = set()
+AS_DOC_USERS = set()
+AS_MEDIA_USERS = set()
 if os.path.exists('authorized_chats.txt'):
     with open('authorized_chats.txt', 'r+') as f:
         lines = f.readlines()
@@ -149,7 +160,6 @@ try:
     if len(DB_URI) == 0:
         raise KeyError
 except KeyError:
-    logging.warning('Database not provided!')
     DB_URI = None
 if DB_URI is not None:
     try:
@@ -173,7 +183,7 @@ if DB_URI is not None:
         conn.close()
 
 LOGGER.info("Generating USER_SESSION_STRING")
-app = Client(':memory:', api_id=int(TELEGRAM_API), api_hash=TELEGRAM_HASH, bot_token=BOT_TOKEN)
+app = Client('Slam', api_id=int(TELEGRAM_API), api_hash=TELEGRAM_HASH, bot_token=BOT_TOKEN)
 
 # Generate Telegraph Token
 sname = ''.join(random.SystemRandom().choices(string.ascii_letters, k=8))
@@ -183,11 +193,19 @@ telegraph.create_account(short_name=sname)
 telegraph_token = telegraph.get_access_token()
 
 try:
+    TG_SPLIT_SIZE = getConfig('TG_SPLIT_SIZE')
+    if len(TG_SPLIT_SIZE) == 0 or int(TG_SPLIT_SIZE) > 2097152000:
+        raise KeyError
+    else:
+        TG_SPLIT_SIZE = int(TG_SPLIT_SIZE)
+except KeyError:
+    TG_SPLIT_SIZE = 2097152000
+try:
     STATUS_LIMIT = getConfig('STATUS_LIMIT')
     if len(STATUS_LIMIT) == 0:
         raise KeyError
     else:
-        STATUS_LIMIT = int(getConfig('STATUS_LIMIT'))
+        STATUS_LIMIT = int(STATUS_LIMIT)
 except KeyError:
     STATUS_LIMIT = None
 try:
@@ -205,15 +223,6 @@ except KeyError:
     MEGA_EMAIL_ID = None
     MEGA_PASSWORD = None
 try:
-    HEROKU_API_KEY = getConfig('HEROKU_API_KEY')
-    HEROKU_APP_NAME = getConfig('HEROKU_APP_NAME')
-    if len(HEROKU_API_KEY) == 0 or len(HEROKU_APP_NAME) == 0:
-        HEROKU_API_KEY = None
-        HEROKU_APP_NAME = None
-except KeyError:
-    HEROKU_API_KEY = None
-    HEROKU_APP_NAME = None
-try:
     UPTOBOX_TOKEN = getConfig('UPTOBOX_TOKEN')
 except KeyError:
     logging.warning('UPTOBOX_TOKEN not provided!')
@@ -222,8 +231,12 @@ try:
     INDEX_URL = getConfig('INDEX_URL')
     if len(INDEX_URL) == 0:
         INDEX_URL = None
+        INDEX_URLS.append(None)
+    else:
+        INDEX_URLS.append(INDEX_URL)
 except KeyError:
     INDEX_URL = None
+    INDEX_URLS.append(None)
 try:
     TORRENT_DIRECT_LIMIT = getConfig('TORRENT_DIRECT_LIMIT')
     if len(TORRENT_DIRECT_LIMIT) == 0:
@@ -318,7 +331,7 @@ except KeyError:
 try:
     BASE_URL = getConfig('BASE_URL_OF_BOT')
     if len(BASE_URL) == 0:
-        BASE_URL = None
+        raise KeyError
 except KeyError:
     logging.warning('BASE_URL_OF_BOT not provided!')
     BASE_URL = None
@@ -328,35 +341,79 @@ try:
 except KeyError:
     IS_VPS = False
 try:
-    SERVER_PORT = getConfig('SERVER_PORT')
-    if len(SERVER_PORT) == 0:
-        SERVER_PORT = None
+    AS_DOCUMENT = getConfig('AS_DOCUMENT')
+    AS_DOCUMENT = AS_DOCUMENT.lower() == 'true'
 except KeyError:
-    logging.warning('SERVER_PORT not provided!')
-    SERVER_PORT = None
+    AS_DOCUMENT = False
+try:
+    RECURSIVE_SEARCH = getConfig('RECURSIVE_SEARCH')
+    RECURSIVE_SEARCH = RECURSIVE_SEARCH.lower() == 'true'
+except KeyError:
+    RECURSIVE_SEARCH = False
 try:
     TOKEN_PICKLE_URL = getConfig('TOKEN_PICKLE_URL')
     if len(TOKEN_PICKLE_URL) == 0:
         TOKEN_PICKLE_URL = None
     else:
-        out = subprocess.run(["wget", "-q", "-O", "token.pickle", TOKEN_PICKLE_URL])
-        if out.returncode != 0:
-            logging.error(out)
+        res = requests.get(TOKEN_PICKLE_URL)
+        if res.status_code == 200:
+            with open('token.pickle', 'wb+') as f:
+                f.write(res.content)
+                f.close()
+        else:
+            logging.error(res.status_code)
+            raise KeyError
 except KeyError:
-    TOKEN_PICKLE_URL = None
+    pass
 try:
     ACCOUNTS_ZIP_URL = getConfig('ACCOUNTS_ZIP_URL')
     if len(ACCOUNTS_ZIP_URL) == 0:
         ACCOUNTS_ZIP_URL = None
     else:
-        out = subprocess.run(["wget", "-q", "-O", "accounts.zip", ACCOUNTS_ZIP_URL])
-        if out.returncode != 0:
-            logging.error(out)
+        res = requests.get(ACCOUNTS_ZIP_URL)
+        if res.status_code == 200:
+            with open('accounts.zip', 'wb+') as f:
+                f.write(res.content)
+                f.close()
+        else:
+            logging.error(res.status_code)
             raise KeyError
         subprocess.run(["unzip", "-q", "-o", "accounts.zip"])
         os.remove("accounts.zip")
 except KeyError:
-    ACCOUNTS_ZIP_URL = None
+    pass
+try:
+    MULTI_SEARCH_URL = getConfig('MULTI_SEARCH_URL')
+    if len(MULTI_SEARCH_URL) == 0:
+        MULTI_SEARCH_URL = None
+    else:
+        res = requests.get(MULTI_SEARCH_URL)
+        if res.status_code == 200:
+            with open('drive_folder', 'wb+') as f:
+                f.write(res.content)
+                f.close()
+        else:
+            logging.error(res.status_code)
+            raise KeyError
+except KeyError:
+    pass
+
+DRIVES_NAMES.append("Main")
+DRIVES_IDS.append(parent_id)
+if os.path.exists('drive_folder'):
+    with open('drive_folder', 'r+') as f:
+        lines = f.readlines()
+        for line in lines:
+            try:
+                temp = line.strip().split()
+                DRIVES_IDS.append(temp[1])
+                DRIVES_NAMES.append(temp[0].replace("_", " "))
+            except:
+                pass
+            try:
+                INDEX_URLS.append(temp[2])
+            except IndexError as e:
+                INDEX_URLS.append(None)
 
 updater = tg.Updater(token=BOT_TOKEN)
 bot = updater.bot

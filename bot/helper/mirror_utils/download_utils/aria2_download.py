@@ -16,25 +16,26 @@ class AriaDownloadHelper:
     @new_thread
     def __onDownloadStarted(self, api, gid):
         if STOP_DUPLICATE or TORRENT_DIRECT_LIMIT is not None or TAR_UNZIP_LIMIT is not None:
-            sleep(2)
+            sleep(1)
             dl = getDownloadByGid(gid)
             download = aria2.get_download(gid)
-        if STOP_DUPLICATE and dl is not None:
+        if STOP_DUPLICATE and dl is not None and not dl.getListener().isLeech:
             LOGGER.info('Checking File/Folder if already in Drive...')
             sname = aria2.get_download(gid).name
             if dl.getListener().isTar:
-                sname = sname + ".tar"
+                sname = sname + ".zip" if dl.getListener().isZip else sname + ".tar"
             if dl.getListener().extract:
                 smsg = None
             else:
-                gdrive = GoogleDriveHelper(None)
-                smsg, button = gdrive.drive_list(sname)
+                gdrive = GoogleDriveHelper()
+                smsg, button = gdrive.drive_list(sname, True)
             if smsg:
                 dl.getListener().onDownloadError('File/Folder already available in Drive.\n\n')
                 aria2.remove([download], force=True)
                 sendMarkup("Here are the search results:", dl.getListener().bot, dl.getListener().update, button)
                 return
         if (TORRENT_DIRECT_LIMIT is not None or TAR_UNZIP_LIMIT is not None) and dl is not None:
+            sleep(1)
             size = aria2.get_download(gid).total_length
             if dl.getListener().isTar or dl.getListener().extract:
                 is_tar_ext = True
@@ -88,8 +89,7 @@ class AriaDownloadHelper:
         aria2.listen_to_notifications(threaded=True, on_download_start=self.__onDownloadStarted,
                                       on_download_error=self.__onDownloadError,
                                       on_download_stop=self.__onDownloadStopped,
-                                      on_download_complete=self.__onDownloadComplete,
-                                      timeout=1)
+                                      on_download_complete=self.__onDownloadComplete)
 
     def add_download(self, link: str, path, listener, filename):
         if is_magnet(link):
